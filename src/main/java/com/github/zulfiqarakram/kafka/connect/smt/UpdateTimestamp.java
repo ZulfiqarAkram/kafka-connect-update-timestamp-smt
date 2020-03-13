@@ -93,15 +93,14 @@ public abstract class UpdateTimestamp<R extends ConnectRecord<R>> implements Tra
 
         final long value = (long) num;
         //long value=131781115208L;
-        Date dt1 = new Date(value);
-        System.out.println(dt1.toString());
+        //System.out.println("Before: "+value);
 
         Calendar instance = Calendar.getInstance();
         instance.set(2016, Calendar.JANUARY, 1, 0, 0);
 
         long finalTimestamp = value + instance.getTimeInMillis();
         long updatedValue = (new Date(finalTimestamp)).getTime();
-        System.out.println(updatedValue);
+        //System.out.println("After: "+updatedValue);
 
         return updatedValue;
     }
