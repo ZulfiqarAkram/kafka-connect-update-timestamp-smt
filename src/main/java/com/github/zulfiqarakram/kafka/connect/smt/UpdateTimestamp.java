@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.*;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
@@ -51,6 +50,9 @@ public abstract class UpdateTimestamp<R extends ConnectRecord<R>> implements Tra
     private static final String PURPOSE = "get correct timestamp value";
 
     private Set<String> timestampFields;
+
+    // this milliseconds get from (2016/1/1 - 1970/1/1)
+    private static final long MILLISECONDS_IN_16801_DAYS = 1451606400000L;
 
 
     @Override
@@ -72,7 +74,7 @@ public abstract class UpdateTimestamp<R extends ConnectRecord<R>> implements Tra
         final Map<String, Object> value = requireMap(operatingValue(record), PURPOSE);
         final HashMap<String, Object> updatedValue = new HashMap<>(value);
         for (String field : timestampFields) {
-            updatedValue.put(field, AddFourYears(value.get(field)));
+            updatedValue.put(field, CorrectTimestamp(value.get(field)));
         }
         return newRecord(record, updatedValue);
 
@@ -83,26 +85,21 @@ public abstract class UpdateTimestamp<R extends ConnectRecord<R>> implements Tra
         final Struct updatedValue = new Struct(value.schema());
         for (Field field : value.schema().fields()) {
             final Object origFieldValue = value.get(field);
-            updatedValue.put(field, timestampFields.contains(field.name()) ? AddFourYears(origFieldValue) : origFieldValue);
+            updatedValue.put(field, timestampFields.contains(field.name()) ? CorrectTimestamp(origFieldValue) : origFieldValue);
         }
         return newRecord(record, updatedValue);
     }
 
-    private static Object AddFourYears(Object num) {
-        if (num == null) return null;
+    // Bus Req: milliseconds calculate after 2016/1/1 that's why we add ms from 1970 to get correct datetime
+    private static Object CorrectTimestamp(Object milliseconds) {
+        if (milliseconds == null) return null;
+        final long timestamp_ms = (long) milliseconds;
 
-        final long value = (long) num;
-        //long value=131781115208L;
-        //System.out.println("Before: "+value);
+        Date actual_dt = new Date(MILLISECONDS_IN_16801_DAYS + timestamp_ms);
+        System.out.println(actual_dt.getTime());
+        System.out.println(actual_dt.toString());
 
-        Calendar instance = Calendar.getInstance();
-        instance.set(2016, Calendar.JANUARY, 1, 0, 0);
-
-        long finalTimestamp = value + instance.getTimeInMillis();
-        long updatedValue = (new Date(finalTimestamp)).getTime();
-        //System.out.println("After: "+updatedValue);
-
-        return updatedValue;
+        return actual_dt.getTime();
     }
 
     //----------------------------END---------------------------------
